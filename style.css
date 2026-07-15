@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Evolventa";
+  src: url("./font/Evolventa-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --page-bg: #000000;
   --text-color: #a88f72;
@@ -52,8 +60,10 @@ body {
   font-size: clamp(56px, 8vw, 110px);
   font-weight: 300;
   line-height: 1;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   white-space: nowrap;
+
+  font-family: "Evolventa", sans-serif;
 }
 
 .glow-letter {
