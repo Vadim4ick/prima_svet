@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Примасвет</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -13,6 +13,207 @@
 
         <p class="tagline">свет для тех, кто чувствует</p>
       </div>
+
+      <form class="halo-controls" aria-label="Настройка ореола">
+        <div class="control">
+          <div class="control-label">
+            <label for="halo-size">Диаметр</label>
+            <output for="halo-size" data-output="halo-size">240px</output>
+          </div>
+          <input
+            id="halo-size"
+            type="range"
+            min="80"
+            max="360"
+            value="240"
+            data-css-var="--halo-size"
+            data-unit="px"
+          />
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <label for="halo-radius">Радиус</label>
+            <output for="halo-radius" data-output="halo-radius">50%</output>
+          </div>
+          <input
+            id="halo-radius"
+            type="range"
+            min="0"
+            max="50"
+            value="50"
+            data-css-var="--halo-radius"
+            data-unit="%"
+          />
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <label for="halo-x">Позиция X</label>
+            <output for="halo-x" data-output="halo-x">50%</output>
+          </div>
+          <input
+            id="halo-x"
+            type="range"
+            min="-40"
+            max="140"
+            value="50"
+            data-css-var="--halo-x"
+            data-unit="%"
+          />
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <label for="halo-y">Позиция Y</label>
+            <output for="halo-y" data-output="halo-y">52%</output>
+          </div>
+          <input
+            id="halo-y"
+            type="range"
+            min="-40"
+            max="140"
+            value="52"
+            data-css-var="--halo-y"
+            data-unit="%"
+          />
+        </div>
+
+        <div class="color-control">
+          <label for="halo-color">Цвет ореола</label>
+          <input
+            id="halo-color"
+            type="color"
+            value="#ffb441"
+            data-color-var="--halo-rgb"
+          />
+        </div>
+
+        <div class="control-actions">
+          <button class="copy-controls" type="button">Копировать</button>
+          <button class="reset-controls" type="reset">Сбросить</button>
+        </div>
+
+        <p class="copy-status" aria-live="polite"></p>
+      </form>
     </div>
+
+    <script>
+      const controls = document.querySelector(".halo-controls");
+      const adjustableInputs = controls.querySelectorAll("input");
+      const rangeInputs = controls.querySelectorAll("input[type='range']");
+      const colorInputs = controls.querySelectorAll("input[type='color']");
+      const copyButton = controls.querySelector(".copy-controls");
+      const copyStatus = controls.querySelector(".copy-status");
+
+      function applyControl(input) {
+        const unit = input.dataset.unit;
+        const value = `${input.value}${unit}`;
+        document.documentElement.style.setProperty(input.dataset.cssVar, value);
+        controls.querySelector(`[data-output="${input.id}"]`).value = value;
+      }
+
+      function hexToRgb(hex) {
+        const value = hex.replace("#", "");
+        const red = parseInt(value.slice(0, 2), 16);
+        const green = parseInt(value.slice(2, 4), 16);
+        const blue = parseInt(value.slice(4, 6), 16);
+        return `${red} ${green} ${blue}`;
+      }
+
+      function applyColor(input) {
+        document.documentElement.style.setProperty(
+          input.dataset.colorVar,
+          hexToRgb(input.value),
+        );
+      }
+
+      function getControlValue(id) {
+        const input = controls.querySelector(`#${id}`);
+        return `${input.value}${input.dataset.unit ?? ""}`;
+      }
+
+      function getDeveloperParams() {
+        const haloColor = controls.querySelector("#halo-color").value;
+        const haloRgb = hexToRgb(haloColor);
+        const haloBlur = getComputedStyle(document.documentElement)
+          .getPropertyValue("--halo-blur")
+          .trim();
+
+        return [
+          ":root {",
+          `  --halo-size: ${getControlValue("halo-size")};`,
+          `  --halo-radius: ${getControlValue("halo-radius")};`,
+          `  --halo-x: ${getControlValue("halo-x")};`,
+          `  --halo-y: ${getControlValue("halo-y")};`,
+          `  --halo-blur: ${haloBlur};`,
+          `  --halo-rgb: ${haloRgb}; /* ${haloColor} */`,
+          "}",
+        ].join("\n");
+      }
+
+      async function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.append(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        textarea.remove();
+
+        if (!copied) {
+          throw new Error("Copy command failed");
+        }
+      }
+
+      function setCopyStatus(message) {
+        copyStatus.textContent = message;
+        window.clearTimeout(setCopyStatus.timer);
+        setCopyStatus.timer = window.setTimeout(() => {
+          copyStatus.textContent = "";
+        }, 2400);
+      }
+
+      rangeInputs.forEach((input) => {
+        applyControl(input);
+        input.addEventListener("input", () => applyControl(input));
+      });
+
+      colorInputs.forEach((input) => {
+        applyColor(input);
+        input.addEventListener("input", () => applyColor(input));
+      });
+
+      copyButton.addEventListener("click", async () => {
+        try {
+          await copyText(getDeveloperParams());
+          setCopyStatus("Параметры скопированы");
+        } catch {
+          setCopyStatus("Не удалось скопировать");
+        }
+      });
+
+      controls.addEventListener("reset", () => {
+        window.requestAnimationFrame(() => {
+          adjustableInputs.forEach((input) => {
+            if (input.type === "range") {
+              applyControl(input);
+            }
+
+            if (input.type === "color") {
+              applyColor(input);
+            }
+          });
+          setCopyStatus("");
+        });
+      });
+    </script>
   </body>
 </html>
